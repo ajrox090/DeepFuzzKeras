@@ -9,6 +9,7 @@ import tensorflow as tf
 from more_itertools import flatten
 from tensorflow.keras import layers
 from tensorflow.keras.layers import TextVectorization
+from tqdm import tqdm
 
 from src.transformer_layers import *
 
@@ -19,15 +20,18 @@ from src.transformer_layers import *
 def prepare_dataset(datafolder="data/fuzz-results"):
     # prepare inputs
     inputs = []
+    pbar = tqdm(total=50000)
     with open(os.path.join(datafolder, "events.bin"), "rb") as f:
         while length := f.read(4):
             n = struct.unpack(">i", length)[0]
+            pbar.update(1)
             inputs.append(" ".join(map(str, flatten(struct.iter_unpack(">h", f.read(n * 2))))))
+    pbar.close()
 
     # prepare outputs
     outputs = []
     corpus = os.path.join(datafolder, "corpus")
-    for fname in sorted(os.listdir(corpus)):
+    for fname in tqdm(sorted(os.listdir(corpus))):
         with open(os.path.join(corpus, fname), "rb") as file:
             outputs.append(" ".join(map(str, flatten(struct.iter_unpack(">B", file.read())))))
 
@@ -41,9 +45,12 @@ def prepare_dataset(datafolder="data/fuzz-results"):
 
 def prepare_random(num=50000):
     inputs, outputs = [], []
-    while (len(inputs) < num):
+    pbar = tqdm(total=50000)
+    while len(inputs) < num:
         inputs.append(" ".join([str(random.randint(1, 30)) for i in range(random.randint(1, 30))]))
         outputs.append(" ".join([str(random.randint(1, 30)) for i in range(random.randint(1, 30))]))
+        pbar.update(1)
+    pbar.close()
     return zip(inputs, outputs)
 
 
